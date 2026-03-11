@@ -1,4 +1,7 @@
-﻿namespace DataTests
+﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Data;
+
+namespace DataTests
 {
 
     [TestClass]
@@ -7,7 +10,8 @@
         [TestMethod]
         public void TestMethod1()
         {
-            Assert.AreEqual(1, 1);
+            var obj = new Klasa1(1);
+            Assert.AreEqual(1, obj.getA());
         }
     }
 }
