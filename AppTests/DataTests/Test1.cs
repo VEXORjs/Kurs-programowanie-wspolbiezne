@@ -1,17 +1,22 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Data;
+﻿using Data;
+using Microsoft.VisualStudio.TestPlatform.ObjectModel;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Model;
+using System.Collections.Generic;
 
 namespace DataTests
 {
-
     [TestClass]
-    public class Test1
+    public class FruitRepositoryTests
     {
         [TestMethod]
-        public void TestMethod1()
+        public void GetFruits_ReturnsThreeFruits()
         {
-            var obj = new Klasa1(1);
-            Assert.AreEqual(1, obj.A);
+            var repo = new FruitRepository();
+            List<Fruit> fruits = repo.GetFruits();
+
+            Assert.AreEqual(3, fruits.Count);
+            Assert.AreEqual("Jabłko", fruits[0].Name);
         }
     }
 }
