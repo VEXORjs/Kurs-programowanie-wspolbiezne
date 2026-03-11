@@ -11,7 +11,7 @@ namespace DataTests
         public void TestMethod1()
         {
             var obj = new Klasa1(1);
-            Assert.AreEqual(1, obj.getA());
+            Assert.AreEqual(1, obj.A);
         }
     }
 }
