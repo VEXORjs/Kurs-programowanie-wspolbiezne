@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
-using Logic;
+﻿using Logic;
 using Model;
+using System.Collections.Generic;
 
 namespace ViewModel
 {

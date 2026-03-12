@@ -1,6 +1,4 @@
 ﻿using Data;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Model;
 using System.Collections.Generic;
 

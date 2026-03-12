@@ -1,6 +1,5 @@
 <Solution>
   <Folder Name="/App/">
-    <File Path="Program.cs" />
     <Project Path="App/Data/Data.csproj" />
     <Project Path="App/Logic/Logic.csproj" />
     <Project Path="App/Presentation/Model/Model.csproj" />
