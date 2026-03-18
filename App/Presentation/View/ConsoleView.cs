@@ -1,17 +1,22 @@
 ﻿using System;
-using ViewModel;
+using App.Presentation.ViewModel;
 
-namespace View
+namespace App.Presentation.View
 {
     public class ConsoleView
     {
-        public void Display()
+        public void Run()
         {
-            var vm = new FruitViewModel();
-            foreach (var fruit in vm.Fruits)
+            var vm = new BallViewModel();
+
+            Console.WriteLine("Initial ball positions:");
+
+            foreach (var ball in vm.Balls)
             {
-                Console.WriteLine(fruit.Name);
+                Console.WriteLine($"X: {ball.X}, Y: {ball.Y}");
             }
+
+            Console.ReadKey();
         }
     }
 }

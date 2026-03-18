@@ -1,16 +1,13 @@
-﻿using System;
-using View;
+﻿using App.Presentation.View;
 
 namespace App
 {
-    class Program
+    internal class Program
     {
         static void Main(string[] args)
         {
             var view = new ConsoleView();
-            view.Display();
-
-            Console.ReadKey();
+            view.Run();
         }
     }
 }
