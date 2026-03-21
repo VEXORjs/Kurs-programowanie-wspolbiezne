@@ -1,13 +1,16 @@
-﻿using App.Presentation.View;
+﻿using System;
+using System.Windows;
 
 namespace App
 {
-    internal class Program
+    public partial class Program
     {
-        static void Main(string[] args)
+        [STAThread]
+        public static void Main()
         {
-            var view = new ConsoleView();
-            view.Run();
+            var app = new Presentation.App();
+            app.InitializeComponent();
+            app.Run();
         }
     }
 }
