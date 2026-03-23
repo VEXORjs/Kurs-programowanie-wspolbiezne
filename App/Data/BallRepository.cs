@@ -10,7 +10,7 @@ namespace App.Data
             {
                 new Ball { X = 0, Y = 0, Radius = 10 },
                 new Ball { X = 10, Y = 5, Radius = 5 },
-                new Ball { X = -3, Y = 7, Radius = 20 }
+                new Ball { X = -3, Y = 7, Radius = 20  }
             };
         }
     }
