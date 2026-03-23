@@ -15,7 +15,7 @@ namespace AppTests
 
             var balls = new List<Ball>
             {
-                new Ball { X = 0, Y = 0, VX = 1, VY = 1 }
+                new Ball { X = 0, Y = 0}
             };
 
             service.UpdatePositions(balls, 1.0);
