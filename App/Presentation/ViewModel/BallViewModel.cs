@@ -10,6 +10,7 @@ namespace App.Presentation.ViewModel
 
         public List<Ball> Balls { get; private set; }
 
+
         public BallViewModel()
         {
             _service = new BallService(new BallRepository());
