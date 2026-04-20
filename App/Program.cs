@@ -8,7 +8,7 @@ namespace App
         [STAThread]
         public static void Main()
         {
-            var app = new Presentation.App();
+            var app = new App.Presentation.App();
             app.InitializeComponent();
             app.Run();
         }
