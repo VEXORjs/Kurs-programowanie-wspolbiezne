@@ -4,6 +4,6 @@ namespace App.Data
 {
     public interface IBallRepository
     {
-        IReadOnlyList<Ball> GetInitialBalls();
+        IReadOnlyList<IBall> GetInitialBalls();
     }
 }

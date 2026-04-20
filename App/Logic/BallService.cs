@@ -12,17 +12,55 @@ namespace App.Logic
             _repository = repository;
         }
 
-        public IReadOnlyList<Ball> GetBalls()
+        public IReadOnlyList<IBall> GetBalls()
         {
             return _repository.GetInitialBalls();
         }
 
-        public void UpdatePositions(IEnumerable<Ball> balls, double dt)
+        public void UpdatePositions(
+                                    IEnumerable<IBall> balls,
+                                    double dt,
+                                    double width,
+                                    double height)
         {
             foreach (var ball in balls)
             {
-                ball.X += ball.VX * dt;
-                ball.Y += ball.VY * dt;
+                double newX = ball.X + ball.VX * dt;
+                double newY = ball.Y + ball.VY * dt;
+
+                // LEFT
+                if (newX < 0)
+                {
+                    ball.X = 0;
+                    ball.VX = 0;
+                }
+                // RIGHT
+                else if (newX + ball.Radius * 2 > width)
+                {
+                    ball.X = width - ball.Radius * 2;
+                    ball.VX = 0;
+                }
+                else
+                {
+                    ball.X = newX;
+                }
+
+                // TOP
+                if (newY < 0)
+                {
+                    ball.Y = 0;
+                    ball.VY = 0;
+                }
+                // BOTTOM
+                else if (newY + ball.Radius * 2 > height)
+                {
+                    ball.Y = height - ball.Radius * 2;
+                    ball.VY = 0;
+                }
+                else
+                {
+                    ball.Y = newY;
+                }
             }
         }
     }

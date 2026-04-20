@@ -1,6 +1,6 @@
 ﻿namespace App.Data
 {
-    public class Ball
+    public class Ball : IBall
     {
         public double X { get; set; }
         public double Y { get; set; }

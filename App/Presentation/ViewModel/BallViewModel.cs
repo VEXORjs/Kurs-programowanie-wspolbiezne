@@ -30,12 +30,32 @@ namespace App.Presentation.ViewModel
             get => _isRunning;
             private set
             {
-                if (_isRunning == value)
-                {
-                    return;
-                }
-
+                if (_isRunning == value) return;
                 _isRunning = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private double _boardWidth;
+        public double BoardWidth
+        {
+            get => _boardWidth;
+            set
+            {
+                if (_boardWidth == value) return;
+                _boardWidth = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private double _boardHeight;
+        public double BoardHeight
+        {
+            get => _boardHeight;
+            set
+            {
+                if (_boardHeight == value) return;
+                _boardHeight = value;
                 OnPropertyChanged();
             }
         }
@@ -77,7 +97,14 @@ namespace App.Presentation.ViewModel
 
         private void Update(double dt)
         {
-            _service.UpdatePositions(_ballItems.Select(x => x.Model), dt);
+            if (BoardWidth <= 0 || BoardHeight <= 0)
+                return;
+
+            _service.UpdatePositions(
+                _ballItems.Select(x => x.Model),
+                dt,
+                BoardWidth,
+                BoardHeight);
 
             foreach (var item in _ballItems)
             {
@@ -87,22 +114,14 @@ namespace App.Presentation.ViewModel
 
         private void Start()
         {
-            if (IsRunning)
-            {
-                return;
-            }
-
+            if (IsRunning) return;
             IsRunning = true;
             _timer.Start();
         }
 
         private void Pause()
         {
-            if (!IsRunning)
-            {
-                return;
-            }
-
+            if (!IsRunning) return;
             _timer.Stop();
             IsRunning = false;
         }
@@ -123,9 +142,9 @@ namespace App.Presentation.ViewModel
 
         public sealed class BallItemViewModel : INotifyPropertyChanged
         {
-            public Ball Model { get; }
+            public IBall Model { get; }
 
-            public BallItemViewModel(Ball model)
+            public BallItemViewModel(IBall model)
             {
                 Model = model;
             }

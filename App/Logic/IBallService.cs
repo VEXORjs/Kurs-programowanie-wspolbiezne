@@ -5,7 +5,12 @@ namespace App.Logic
 {
     public interface IBallService
     {
-        IReadOnlyList<Ball> GetBalls();
-        void UpdatePositions(IEnumerable<Ball> balls, double dt);
+        IReadOnlyList<IBall> GetBalls();
+
+        void UpdatePositions(
+            IEnumerable<IBall> balls,
+            double dt,
+            double width,
+            double height);
     }
 }

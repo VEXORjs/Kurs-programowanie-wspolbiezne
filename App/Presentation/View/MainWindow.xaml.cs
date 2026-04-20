@@ -11,5 +11,14 @@ namespace App.Presentation.View
             InitializeComponent();
             DataContext = new BallViewModel(service);
         }
+
+        private void Board_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            if (DataContext is BallViewModel vm)
+            {
+                vm.BoardWidth = e.NewSize.Width;
+                vm.BoardHeight = e.NewSize.Height;
+            }
+        }
     }
 }

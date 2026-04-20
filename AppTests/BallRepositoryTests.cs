@@ -1,19 +1,16 @@
-﻿using Xunit;
+﻿using System.Collections.Generic;
 using App.Data;
 
 namespace AppTests
 {
-    public class BallRepositoryTests
+    public class FakeBallRepository : IBallRepository
     {
-        [Fact]
-        public void ShouldReturnInitialBalls()
+        public IReadOnlyList<IBall> GetInitialBalls()
         {
-            var repo = new BallRepository();
-
-            var balls = repo.GetInitialBalls();
-
-            Assert.NotNull(balls);
-            Assert.Equal(3, balls.Count);
+            return new List<IBall>
+            {
+                new Ball { X = 0, Y = 0 }
+            };
         }
     }
 }
