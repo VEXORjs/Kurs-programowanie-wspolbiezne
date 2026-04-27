@@ -11,7 +11,7 @@ namespace AppTests
         {
             IBallRepository repo = new BallRepository();
 
-            var balls = repo.GetInitialBalls();
+            var balls = repo.GetInitialBalls(4, 100, 100);
 
             Assert.NotNull(balls);
             Assert.Equal(4, balls.Count);

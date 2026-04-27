@@ -5,7 +5,7 @@ namespace AppTests
 {
     internal class FakeBallRepository : IBallRepository
     {
-        public IReadOnlyList<IBall> GetInitialBalls()
+        public IReadOnlyList<IBall> GetInitialBalls(int count, double width, double height)
         {
             return new List<IBall>
             {

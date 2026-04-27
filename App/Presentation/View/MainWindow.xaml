@@ -22,6 +22,14 @@
                 <TextBlock Text="{Binding IsRunning, StringFormat=Ruch: {0}}"
                            VerticalAlignment="Center"
                            Margin="16,0,0,0"/>
+                <StackPanel Orientation="Horizontal" Margin="10">
+                    <TextBlock Text="Liczba kul:" VerticalAlignment="Center"/>
+
+                    <ComboBox Width="60"
+                              ItemsSource="{Binding BallCounts}"
+                              SelectedItem="{Binding SelectedBallCount}"
+                              Margin="8,0"/>
+                </StackPanel>
             </StackPanel>
         </Border>
 

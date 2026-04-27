@@ -9,7 +9,7 @@ namespace AppTests
     {
         private class FakeBallRepository : IBallRepository
         {
-            public IReadOnlyList<IBall> GetInitialBalls()
+            public IReadOnlyList<IBall> GetInitialBalls(int count, double width, double height)
             {
                 return new List<IBall>
                 {
@@ -36,7 +36,7 @@ namespace AppTests
         }
 
         [Fact]
-        public void Ball_ShouldStopAtRightBoundary()
+        public void Ball_ShouldBounceAtRightBoundary()
         {
             IBallRepository repo = new FakeBallRepository();
             IBallService service = new BallService(repo);
@@ -48,12 +48,12 @@ namespace AppTests
 
             service.UpdatePositions(balls, 1.0, 100, 100);
 
-            Assert.Equal(80, balls[0].X); 
-            Assert.Equal(0, balls[0].VX); 
+            Assert.Equal(80, balls[0].X);
+            Assert.True(balls[0].VX < 0);
         }
 
         [Fact]
-        public void Ball_ShouldStopAtBottomBoundary()
+        public void Ball_ShouldBounceAtBottomBoundary()
         {
             IBallRepository repo = new FakeBallRepository();
             IBallService service = new BallService(repo);
@@ -66,7 +66,23 @@ namespace AppTests
             service.UpdatePositions(balls, 1.0, 100, 100);
 
             Assert.Equal(80, balls[0].Y);
-            Assert.Equal(0, balls[0].VY);
+            Assert.True(balls[0].VY < 0);
+        }
+        [Fact]
+        public void BallsBounceTests()
+        {
+            var service = new BallService(new FakeBallRepository());
+
+            var balls = new List<IBall>
+            {
+                new Ball { X = 0, Y = 0, VX = 1, VY = 0, Radius = 10, Mass = 1 },
+                new Ball { X = 15, Y = 0, VX = -1, VY = 0, Radius = 10, Mass = 1 }
+            };
+
+            service.UpdatePositions(balls, 1, 100, 100);
+
+            Assert.NotEqual(1, balls[0].VX);
+            Assert.NotEqual(-1, balls[1].VX);
         }
     }
 }

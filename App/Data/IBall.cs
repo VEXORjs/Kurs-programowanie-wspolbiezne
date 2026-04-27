@@ -5,4 +5,7 @@
     double VX { get; set; }
     double VY { get; set; }
     double Radius { get; }
+    double Mass { get; }
+
+    object Lock { get; }
 }

@@ -1,21 +1,25 @@
-﻿using System;
+﻿using App.Data;
+using App.Logic;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Input;
-using System.Windows.Threading;
-using App.Data;
-using App.Logic;
 
 namespace App.Presentation.ViewModel
 {
     public class BallViewModel : INotifyPropertyChanged
     {
         private readonly IBallService _service;
-        private readonly DispatcherTimer _timer;
         private readonly List<BallItemViewModel> _ballItems;
+
+        private CancellationTokenSource _cts;
+        private Task _simulationTask;
 
         private bool _isRunning;
 
@@ -24,6 +28,21 @@ namespace App.Presentation.ViewModel
         public ICommand StartCommand { get; }
         public ICommand PauseCommand { get; }
         public ICommand ResetCommand { get; }
+
+        public List<int> BallCounts { get; } = Enumerable.Range(1, 16).ToList();
+
+        private int _selectedBallCount = 4;
+        public int SelectedBallCount
+        {
+            get => _selectedBallCount;
+            set
+            {
+                if (_selectedBallCount == value) return;
+                _selectedBallCount = value;
+                OnPropertyChanged();
+                Reset();
+            }
+        }
 
         public bool IsRunning
         {
@@ -69,12 +88,6 @@ namespace App.Presentation.ViewModel
 
             LoadBalls();
 
-            _timer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMilliseconds(16)
-            };
-            _timer.Tick += (_, __) => Update(0.016);
-
             StartCommand = new RelayCommand(Start);
             PauseCommand = new RelayCommand(Pause);
             ResetCommand = new RelayCommand(Reset);
@@ -84,10 +97,13 @@ namespace App.Presentation.ViewModel
 
         private void LoadBalls()
         {
+            if (BoardWidth <= 0 || BoardHeight <= 0)
+                return;
+
             _ballItems.Clear();
             Balls.Clear();
 
-            foreach (var ball in _service.GetBalls())
+            foreach (var ball in _service.GetBalls(SelectedBallCount, BoardWidth, BoardHeight))
             {
                 var item = new BallItemViewModel(ball);
                 _ballItems.Add(item);
@@ -95,38 +111,60 @@ namespace App.Presentation.ViewModel
             }
         }
 
-        private void Update(double dt)
+        private async Task RunAsync(CancellationToken token)
         {
-            if (BoardWidth <= 0 || BoardHeight <= 0)
-                return;
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
 
-            _service.UpdatePositions(
-                _ballItems.Select(x => x.Model),
-                dt,
-                BoardWidth,
-                BoardHeight);
-
-            foreach (var item in _ballItems)
+            while (!token.IsCancellationRequested)
             {
-                item.Refresh();
+                if (!IsRunning)
+                {
+                    stopwatch.Restart();
+                    await Task.Delay(10, token);
+                    continue;
+                }
+
+                double dt = stopwatch.Elapsed.TotalSeconds;
+                stopwatch.Restart();
+
+                await Task.Run(() =>
+                {
+                    _service.UpdatePositions(
+                        _ballItems.Select(x => x.Model),
+                        dt,
+                        BoardWidth,
+                        BoardHeight);
+                }, token);
+
+                foreach (var item in _ballItems)
+                {
+                    item.Refresh();
+                }
             }
         }
 
         private void Start()
         {
             if (IsRunning) return;
+
             IsRunning = true;
-            _timer.Start();
+
+            if (_simulationTask == null || _simulationTask.IsCompleted)
+            {
+                _cts = new CancellationTokenSource();
+                _simulationTask = RunAsync(_cts.Token);
+            }
         }
 
         private void Pause()
         {
             if (!IsRunning) return;
-            _timer.Stop();
+
             IsRunning = false;
         }
 
-        private void Reset()
+        public void Reset()
         {
             Pause();
             LoadBalls();
@@ -139,6 +177,10 @@ namespace App.Presentation.ViewModel
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
+
+        // ============================
+        // BALL ITEM VM
+        // ============================
 
         public sealed class BallItemViewModel : INotifyPropertyChanged
         {
@@ -169,6 +211,10 @@ namespace App.Presentation.ViewModel
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
             }
         }
+
+        // ============================
+        // RELAY COMMAND
+        // ============================
 
         private sealed class RelayCommand : ICommand
         {

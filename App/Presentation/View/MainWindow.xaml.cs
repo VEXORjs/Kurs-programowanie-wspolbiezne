@@ -18,6 +18,8 @@ namespace App.Presentation.View
             {
                 vm.BoardWidth = e.NewSize.Width;
                 vm.BoardHeight = e.NewSize.Height;
+
+                vm.Reset();
             }
         }
     }
