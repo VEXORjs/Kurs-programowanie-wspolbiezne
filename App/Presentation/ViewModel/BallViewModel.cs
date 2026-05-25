@@ -10,6 +10,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using System.Windows.Media;
 
 namespace App.Presentation.ViewModel
 {
@@ -17,9 +18,7 @@ namespace App.Presentation.ViewModel
     {
         private readonly IBallService _service;
         private readonly List<BallItemViewModel> _ballItems;
-
-        private CancellationTokenSource _cts;
-        private Task _simulationTask;
+        private TimeSpan _lastRenderTime;
 
         private bool _isRunning;
 
@@ -81,6 +80,7 @@ namespace App.Presentation.ViewModel
 
         public BallViewModel(IBallService service)
         {
+            CompositionTarget.Rendering += OnRendering;
             _service = service;
 
             _ballItems = new List<BallItemViewModel>();
@@ -93,6 +93,37 @@ namespace App.Presentation.ViewModel
             ResetCommand = new RelayCommand(Reset);
 
             Start();
+        }
+        private void OnRendering(object sender, EventArgs e)
+        {
+            if (!IsRunning)
+                return;
+
+            if (e is not RenderingEventArgs args)
+                return;
+
+            if (_lastRenderTime == TimeSpan.Zero)
+            {
+                _lastRenderTime = args.RenderingTime;
+                return;
+            }
+
+            double dt =
+                (args.RenderingTime - _lastRenderTime)
+                .TotalSeconds;
+
+            _lastRenderTime = args.RenderingTime;
+
+            _service.UpdatePositions(
+                _ballItems.Select(x => x.Model),
+                dt,
+                BoardWidth,
+                BoardHeight);
+
+            foreach (var item in _ballItems)
+            {
+                item.Refresh();
+            }
         }
 
         private void LoadBalls()
@@ -111,56 +142,14 @@ namespace App.Presentation.ViewModel
             }
         }
 
-        private async Task RunAsync(CancellationToken token)
-        {
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
-
-            while (!token.IsCancellationRequested)
-            {
-                if (!IsRunning)
-                {
-                    stopwatch.Restart();
-                    await Task.Delay(10, token);
-                    continue;
-                }
-
-                double dt = stopwatch.Elapsed.TotalSeconds;
-                stopwatch.Restart();
-
-                await Task.Run(() =>
-                {
-                    _service.UpdatePositions(
-                        _ballItems.Select(x => x.Model),
-                        dt,
-                        BoardWidth,
-                        BoardHeight);
-                }, token);
-
-                foreach (var item in _ballItems)
-                {
-                    item.Refresh();
-                }
-            }
-        }
 
         private void Start()
         {
-            if (IsRunning) return;
-
             IsRunning = true;
-
-            if (_simulationTask == null || _simulationTask.IsCompleted)
-            {
-                _cts = new CancellationTokenSource();
-                _simulationTask = RunAsync(_cts.Token);
-            }
         }
 
         private void Pause()
         {
-            if (!IsRunning) return;
-
             IsRunning = false;
         }
 
@@ -191,9 +180,38 @@ namespace App.Presentation.ViewModel
                 Model = model;
             }
 
-            public double X => Model.X;
-            public double Y => Model.Y;
-            public double Radius => Model.Radius;
+            public double X
+            {
+                get
+                {
+                    lock (Model.Lock)
+                    {
+                        return Model.X;
+                    }
+                }
+            }
+
+            public double Y
+            {
+                get
+                {
+                    lock (Model.Lock)
+                    {
+                        return Model.Y;
+                    }
+                }
+            }
+
+            public double Radius
+            {
+                get
+                {
+                    lock (Model.Lock)
+                    {
+                        return Model.Radius;
+                    }
+                }
+            }
             public double Diameter => Model.Radius * 2.0;
 
             public void Refresh()

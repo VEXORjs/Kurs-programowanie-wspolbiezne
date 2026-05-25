@@ -64,15 +64,16 @@ namespace App.Data
                     VY = 1000;
                 }
 
-                balls.Add(new Ball
+                var ball = new Ball
                 {
-                    X = x,
-                    Y = y,
-                    VX = VX,
-                    VY = VY,
                     Radius = radius,
                     Mass = 1.0
-                });
+                };
+
+                ball.SetPosition(x, y);
+                ball.ApplyVelocity(VX, VY);
+
+                balls.Add(ball);
             }
 
             return balls;

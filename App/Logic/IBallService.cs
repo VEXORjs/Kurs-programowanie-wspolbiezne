@@ -1,10 +1,19 @@
-﻿public interface IBallService
-{
-    IReadOnlyList<IBall> GetBalls(int count, double width, double height);
+﻿using System.Collections.Generic;
+using App.Data;
 
-    void UpdatePositions(
-        IEnumerable<IBall> balls,
-        double dt,
-        double width,
-        double height);
+namespace App.Logic
+{
+    public interface IBallService
+    {
+        IReadOnlyList<IBall> GetBalls(
+            int count,
+            double width,
+            double height);
+
+        void UpdatePositions(
+            IEnumerable<IBall> balls,
+            double dt,
+            double width,
+            double height);
+    }
 }

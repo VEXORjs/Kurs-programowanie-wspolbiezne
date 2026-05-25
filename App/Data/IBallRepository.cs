@@ -1,4 +1,12 @@
-﻿public interface IBallRepository
+﻿using System.Collections.Generic;
+
+namespace App.Data
 {
-    IReadOnlyList<IBall> GetInitialBalls(int count, double width, double height);
+    public interface IBallRepository
+    {
+        IReadOnlyList<IBall> GetInitialBalls(
+            int count,
+            double width,
+            double height);
+    }
 }

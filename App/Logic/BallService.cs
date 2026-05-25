@@ -1,4 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 using App.Data;
 
 namespace App.Logic
@@ -6,59 +10,47 @@ namespace App.Logic
     public class BallService : IBallService
     {
         private readonly IBallRepository _repository;
+        private readonly ILogger _logger;
 
-        public BallService(IBallRepository repository)
+        public BallService(
+            IBallRepository repository,
+            ILogger logger)
         {
             _repository = repository;
+            _logger = logger;
         }
 
-        public IReadOnlyList<IBall> GetBalls(int count, double width, double height)
+        public IReadOnlyList<IBall> GetBalls(
+            int count,
+            double width,
+            double height)
         {
-            return _repository.GetInitialBalls(count, width, height);
+            return _repository.GetInitialBalls(
+                count,
+                width,
+                height);
         }
 
-        public void UpdatePositions(IEnumerable<IBall> balls, double dt, double width, double height)
+        public void UpdatePositions(
+            IEnumerable<IBall> balls,
+            double dt,
+            double width,
+            double height)
         {
             var ballList = balls.ToList();
 
             Parallel.ForEach(ballList, ball =>
             {
-                lock (ball.Lock)
-                {
-                    ball.X += ball.VX * dt;
-                    ball.Y += ball.VY * dt;
+                ball.Move(dt);
 
-                    // LEFT
-                    if (ball.X < 0)
-                    {
-                        ball.X = 0;
-                        ball.VX *= -1;
-                    }
+                HandleBoundaries(ball, width, height);
 
-                    // RIGHT
-                    if (ball.X + ball.Radius * 2 > width)
-                    {
-                        ball.X = width - ball.Radius * 2;
-                        ball.VX *= -1;
-                    }
+                var state = ball.GetState();
 
-                    // TOP
-                    if (ball.Y < 0)
-                    {
-                        ball.Y = 0;
-                        ball.VY *= -1;
-                    }
-
-                    // BOTTOM
-                    if (ball.Y + ball.Radius * 2 > height)
-                    {
-                        ball.Y = height - ball.Radius * 2;
-                        ball.VY *= -1;
-                    }
-                }
+                _logger.Log(
+                    $"Ball X={state.X:F2} Y={state.Y:F2}");
             });
 
-            // kolizje (sekcja krytyczna!)
             for (int i = 0; i < ballList.Count; i++)
             {
                 for (int j = i + 1; j < ballList.Count; j++)
@@ -66,49 +58,116 @@ namespace App.Logic
                     var a = ballList[i];
                     var b = ballList[j];
 
-                    lock (a.Lock)
-                        lock (b.Lock)
+                    var first =
+                        RuntimeHelpers.GetHashCode(a)
+                        < RuntimeHelpers.GetHashCode(b)
+                            ? a
+                            : b;
+
+                    var second = first == a ? b : a;
+
+                    lock (first.Lock)
+                        lock (second.Lock)
                         {
                             ResolveCollision(a, b);
                         }
                 }
             }
         }
-        private void ResolveCollision(IBall a, IBall b)
+
+        private void HandleBoundaries(
+            IBall ball,
+            double width,
+            double height)
         {
-            double dx = b.X - a.X;
-            double dy = b.Y - a.Y;
+            var state = ball.GetState();
+
+            if (state.X < 0)
+            {
+                ball.SetPosition(0, state.Y);
+                ball.BounceX();
+            }
+
+            if (state.X + ball.Radius * 2 > width)
+            {
+                ball.SetPosition(
+                    width - ball.Radius * 2,
+                    state.Y);
+
+                ball.BounceX();
+            }
+
+            if (state.Y < 0)
+            {
+                ball.SetPosition(state.X, 0);
+                ball.BounceY();
+            }
+
+            if (state.Y + ball.Radius * 2 > height)
+            {
+                ball.SetPosition(
+                    state.X,
+                    height - ball.Radius * 2);
+
+                ball.BounceY();
+            }
+        }
+
+        private void ResolveCollision(
+            IBall a,
+            IBall b)
+        {
+            var sa = a.GetState();
+            var sb = b.GetState();
+
+            double dx = sb.X - sa.X;
+            double dy = sb.Y - sa.Y;
+
             double dist = Math.Sqrt(dx * dx + dy * dy);
 
-            if (dist == 0) return;
+            if (dist == 0)
+                return;
 
             if (dist < a.Radius + b.Radius)
             {
                 double nx = dx / dist;
                 double ny = dy / dist;
 
-                double p = 2 * (
-                    a.VX * nx + a.VY * ny -
-                    b.VX * nx - b.VY * ny
-                ) / (a.Mass + b.Mass);
+                double p =
+                    2 * (
+                    sa.VX * nx +
+                    sa.VY * ny -
+                    sb.VX * nx -
+                    sb.VY * ny
+                    )
+                    / (a.Mass + b.Mass);
 
-                a.VX -= p * b.Mass * nx;
-                a.VY -= p * b.Mass * ny;
+                a.ResolveCollision(
+                    nx,
+                    ny,
+                    p,
+                    b.Mass);
 
-                b.VX += p * a.Mass * nx;
-                b.VY += p * a.Mass * ny;
+                b.ResolveCollision(
+                    -nx,
+                    -ny,
+                    p,
+                    a.Mass);
 
-                double overlap = (a.Radius + b.Radius) - dist;
+                double overlap =
+                    (a.Radius + b.Radius) - dist;
 
                 if (overlap > 0)
                 {
                     double correction = overlap / 2;
 
-                    a.X -= correction * nx;
-                    a.Y -= correction * ny;
+                    a.SetPosition(
+                        sa.X - correction * nx,
+                        sa.Y - correction * ny);
 
-                    b.X += correction * nx;
-                    b.Y += correction * ny;
+                    b.SetPosition(
+                        sb.X + correction * nx,
+                        sb.Y + correction * ny);
                 }
             }
         }

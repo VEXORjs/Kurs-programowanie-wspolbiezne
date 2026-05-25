@@ -5,12 +5,29 @@ namespace AppTests
 {
     internal class FakeBallRepository : IBallRepository
     {
-        public IReadOnlyList<IBall> GetInitialBalls(int count, double width, double height)
+        public IReadOnlyList<IBall> GetInitialBalls(
+            int count,
+            double width,
+            double height)
         {
-            return new List<IBall>
+            var balls = new List<IBall>();
+
+            for (int i = 0; i < count; i++)
             {
-                new Ball { X = 0, Y = 0, VX = 0, VY = 0, Radius = 10 }
-            };
+                var ball = new Ball
+                {
+                    Radius = 10,
+                    Mass = 1
+                };
+
+                ball.SetPosition(
+                    i * 30,
+                    i * 30);
+
+                balls.Add(ball);
+            }
+
+            return balls;
         }
     }
 }
