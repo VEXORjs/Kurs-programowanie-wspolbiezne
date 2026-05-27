@@ -10,6 +10,7 @@ namespace App
         {
             var app = new App.Presentation.App();
             app.InitializeComponent();
+            //concurrent programming
             app.Run();
         }
     }
