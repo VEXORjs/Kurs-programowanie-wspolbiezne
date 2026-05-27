@@ -16,6 +16,7 @@ namespace App.Data
         {
             get
             {
+            //zamek(programowanie wspolbiezne
                 lock (_lock)
                 {
                     return _x;
