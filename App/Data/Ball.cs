@@ -67,6 +67,7 @@ namespace App.Data
         {
             lock (_lock)
             {
+            //aktualiazacja stanu zależna od rzeczywistego upływu czasu
                 _x += _vx * dt;
                 _y += _vy * dt;
             }
