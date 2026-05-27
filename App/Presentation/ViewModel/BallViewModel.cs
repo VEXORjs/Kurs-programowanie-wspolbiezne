@@ -81,6 +81,7 @@ namespace App.Presentation.ViewModel
         public BallViewModel(IBallService service)
         {
             CompositionTarget.Rendering += OnRendering;
+            //dependency injection
             _service = service;
 
             _ballItems = new List<BallItemViewModel>();
