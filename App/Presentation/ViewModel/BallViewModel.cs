@@ -14,11 +14,11 @@ using System.Windows.Media;
 
 namespace App.Presentation.ViewModel
 {
-    public class BallViewModel : INotifyPropertyChanged
+    public class BallViewModel : INotifyPropertyChanged, IDisposable
     {
         private readonly IBallService _service;
         private readonly List<BallItemViewModel> _ballItems;
-        private TimeSpan _lastRenderTime;
+        private readonly System.Timers.Timer _timer;
 
         private bool _isRunning;
 
@@ -80,40 +80,29 @@ namespace App.Presentation.ViewModel
 
         public BallViewModel(IBallService service)
         {
-            CompositionTarget.Rendering += OnRendering;
-            //dependency injection
             _service = service;
 
             _ballItems = new List<BallItemViewModel>();
             Balls = new ObservableCollection<BallItemViewModel>();
 
-            LoadBalls();
-
             StartCommand = new RelayCommand(Start);
             PauseCommand = new RelayCommand(Pause);
             ResetCommand = new RelayCommand(Reset);
 
+            _timer = new System.Timers.Timer(16); // ~60 FPS
+            _timer.Elapsed += OnTimerElapsed;
+
+            LoadBalls();
+
             Start();
         }
-        private void OnRendering(object sender, EventArgs e)
+        
+        private void OnTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
         {
             if (!IsRunning)
                 return;
 
-            if (e is not RenderingEventArgs args)
-                return;
-
-            if (_lastRenderTime == TimeSpan.Zero)
-            {
-                _lastRenderTime = args.RenderingTime;
-                return;
-            }
-
-            double dt =
-                (args.RenderingTime - _lastRenderTime)
-                .TotalSeconds;
-
-            _lastRenderTime = args.RenderingTime;
+            double dt = 0.016; // Assuming 60 FPS, so ~16ms per frame
 
             _service.UpdatePositions(
                 _ballItems.Select(x => x.Model),
@@ -121,9 +110,21 @@ namespace App.Presentation.ViewModel
                 BoardWidth,
                 BoardHeight);
 
-            foreach (var item in _ballItems)
+            System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
             {
-                item.Refresh();
+                foreach (var item in _ballItems)
+                {
+                    item.Refresh();
+                }
+            });
+        }
+
+        public void Dispose()
+        {
+            if (_timer != null) {
+                _timer.Stop();
+                _timer.Elapsed -= OnTimerElapsed;
+                _timer.Dispose();
             }
         }
 
@@ -143,14 +144,15 @@ namespace App.Presentation.ViewModel
             }
         }
 
-
         private void Start()
         {
+            _timer.Start();
             IsRunning = true;
         }
 
         private void Pause()
         {
+            _timer.Stop();
             IsRunning = false;
         }
 

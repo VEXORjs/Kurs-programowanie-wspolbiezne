@@ -1,6 +1,9 @@
 ﻿using App.Data;
+using System.Collections;
 using System.Collections.Concurrent;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 public sealed class FileLogger : ILogger, IDisposable
 {
@@ -8,6 +11,7 @@ public sealed class FileLogger : ILogger, IDisposable
         new BlockingCollection<string>();
 
     private readonly Task _worker;
+    private int _isDisposed = 0;
 
     public FileLogger(string path = "diagnostics.log")
     {
@@ -30,16 +34,23 @@ public sealed class FileLogger : ILogger, IDisposable
 
     public void Log(string message)
     {
-        if (!_queue.IsAddingCompleted)
+        if (Interlocked.CompareExchange(ref _isDisposed, 0, 0) == 1)
         {
-            _queue.Add($"{DateTime.Now:HH:mm:ss.fff} {message}");
+            return;
         }
+        try
+        {
+            if (!_queue.IsAddingCompleted)
+                _queue.Add($"{DateTime.Now:HH:mm:ss.fff} {message}");
+        }
+        catch (ObjectDisposedException) { }
     }
 
-    public void Dispose()
-    {
-        _queue.CompleteAdding();
-        _worker.Wait();
-        _queue.Dispose();
-    }
+public void Dispose()
+{
+    if (Interlocked.Exchange(ref _isDisposed, 1) == 1) return;
+    _queue.CompleteAdding();
+    _worker.Wait();
+    _queue.Dispose();
+}
 }
