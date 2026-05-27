@@ -14,9 +14,10 @@ public sealed class FileLogger : ILogger, IDisposable
         path = Path.Combine(
             Directory.GetCurrentDirectory(),
             path);
-
+        //programowanie wspolbiezne(nowy worker)
         _worker = Task.Run(async () =>
         {
+            //message logger
             using var writer = new StreamWriter(path, append: true);
 
             foreach (var message in _queue.GetConsumingEnumerable())
