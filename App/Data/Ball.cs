@@ -129,6 +129,7 @@ namespace App.Data
             {
                 _vx -= impulse * otherMass * nx;
                 _vy -= impulse * otherMass * ny;
+
             }
         }
     }

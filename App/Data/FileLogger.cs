@@ -52,5 +52,6 @@ public void Dispose()
     _queue.CompleteAdding();
     _worker.Wait();
     _queue.Dispose();
+
 }
 }
