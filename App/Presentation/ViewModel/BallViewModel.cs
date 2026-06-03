@@ -183,38 +183,9 @@ namespace App.Presentation.ViewModel
                 Model = model;
             }
 
-            public double X
-            {
-                get
-                {
-                    lock (Model.Lock)
-                    {
-                        return Model.X;
-                    }
-                }
-            }
-
-            public double Y
-            {
-                get
-                {
-                    lock (Model.Lock)
-                    {
-                        return Model.Y;
-                    }
-                }
-            }
-
-            public double Radius
-            {
-                get
-                {
-                    lock (Model.Lock)
-                    {
-                        return Model.Radius;
-                    }
-                }
-            }
+            public double X => Model.X;
+            public double Y => Model.Y;
+            public double Radius => Model.Radius;
             public double Diameter => Model.Radius * 2.0;
 
             public void Refresh()

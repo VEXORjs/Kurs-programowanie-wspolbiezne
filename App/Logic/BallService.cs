@@ -25,10 +25,7 @@ namespace App.Logic
             double width,
             double height)
         {
-            return _repository.GetInitialBalls(
-                count,
-                width,
-                height);
+            return _repository.GetInitialBalls(count, width, height);
         }
 
         public void UpdatePositions(
@@ -39,18 +36,24 @@ namespace App.Logic
         {
             var ballList = balls.ToList();
 
+            // =========================
+            // 1. UPDATE POSITIONS (parallel + per-ball lock)
+            // =========================
             Parallel.ForEach(ballList, ball =>
             {
-                ball.Move(dt);
+                lock (ball)
+                {
+                    ball.Move(dt);
+                    HandleBoundaries(ball, width, height);
 
-                HandleBoundaries(ball, width, height);
-
-                var state = ball.GetState();
-
-                _logger.Log(
-                    $"Ball X={state.X:F2} Y={state.Y:F2}");
+                    var s = ball.GetState();
+                    _logger.Log($"Ball X={s.X:F2} Y={s.Y:F2}");
+                }
             });
 
+            // =========================
+            // 2. COLLISIONS (ordered locking)
+            // =========================
             for (int i = 0; i < ballList.Count; i++)
             {
                 for (int j = i + 1; j < ballList.Count; j++)
@@ -59,15 +62,15 @@ namespace App.Logic
                     var b = ballList[j];
 
                     var first =
-                        RuntimeHelpers.GetHashCode(a)
-                        < RuntimeHelpers.GetHashCode(b)
+                        RuntimeHelpers.GetHashCode(a) <
+                        RuntimeHelpers.GetHashCode(b)
                             ? a
                             : b;
 
                     var second = first == a ? b : a;
 
-                    lock (first.Lock)
-                        lock (second.Lock)
+                    lock (first)
+                        lock (second)
                         {
                             ResolveCollision(a, b);
                         }
@@ -90,10 +93,7 @@ namespace App.Logic
 
             if (state.X + ball.Radius * 2 > width)
             {
-                ball.SetPosition(
-                    width - ball.Radius * 2,
-                    state.Y);
-
+                ball.SetPosition(width - ball.Radius * 2, state.Y);
                 ball.BounceX();
             }
 
@@ -105,17 +105,12 @@ namespace App.Logic
 
             if (state.Y + ball.Radius * 2 > height)
             {
-                ball.SetPosition(
-                    state.X,
-                    height - ball.Radius * 2);
-
+                ball.SetPosition(state.X, height - ball.Radius * 2);
                 ball.BounceY();
             }
         }
 
-        private void ResolveCollision(
-            IBall a,
-            IBall b)
+        private void ResolveCollision(IBall a, IBall b)
         {
             var sa = a.GetState();
             var sb = b.GetState();
@@ -124,9 +119,7 @@ namespace App.Logic
             double dy = sb.Y - sa.Y;
 
             double dist = Math.Sqrt(dx * dx + dy * dy);
-
-            if (dist == 0)
-                return;
+            if (dist == 0) return;
 
             if (dist < a.Radius + b.Radius)
             {
@@ -135,39 +128,23 @@ namespace App.Logic
 
                 double p =
                     2 * (
-                    sa.VX * nx +
-                    sa.VY * ny -
-                    sb.VX * nx -
-                    sb.VY * ny
-                    )
-                    / (a.Mass + b.Mass);
+                        sa.VX * nx +
+                        sa.VY * ny -
+                        sb.VX * nx -
+                        sb.VY * ny
+                    ) / (a.Mass + b.Mass);
 
-                a.ResolveCollision(
-                    nx,
-                    ny,
-                    p,
-                    b.Mass);
+                a.ResolveCollision(nx, ny, p, b.Mass);
+                b.ResolveCollision(-nx, -ny, p, a.Mass);
 
-                b.ResolveCollision(
-                    -nx,
-                    -ny,
-                    p,
-                    a.Mass);
-
-                double overlap =
-                    (a.Radius + b.Radius) - dist;
+                double overlap = (a.Radius + b.Radius) - dist;
 
                 if (overlap > 0)
                 {
                     double correction = overlap / 2;
 
-                    a.SetPosition(
-                        sa.X - correction * nx,
-                        sa.Y - correction * ny);
-
-                    b.SetPosition(
-                        sb.X + correction * nx,
-                        sb.Y + correction * ny);
+                    a.SetPosition(sa.X - correction * nx, sa.Y - correction * ny);
+                    b.SetPosition(sb.X + correction * nx, sb.Y + correction * ny);
                 }
             }
         }

@@ -11,8 +11,6 @@
         double Radius { get; }
         double Mass { get; }
 
-        object Lock { get; }
-
         void Move(double dt);
 
         void SetPosition(double x, double y);
@@ -31,7 +29,6 @@
             double impulse,
             double otherMass);
     }
-
     public readonly struct BallState
     {
         public BallState(
