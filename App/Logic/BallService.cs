@@ -36,9 +36,6 @@ namespace App.Logic
         {
             var ballList = balls.ToList();
 
-            // =========================
-            // 1. UPDATE POSITIONS (parallel + per-ball lock)
-            // =========================
             Parallel.ForEach(ballList, ball =>
             {
                 lock (ball)
@@ -51,9 +48,6 @@ namespace App.Logic
                 }
             });
 
-            // =========================
-            // 2. COLLISIONS (ordered locking)
-            // =========================
             for (int i = 0; i < ballList.Count; i++)
             {
                 for (int j = i + 1; j < ballList.Count; j++)
