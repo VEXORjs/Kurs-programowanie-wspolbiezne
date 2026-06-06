@@ -19,8 +19,25 @@ namespace App.Presentation.ViewModel
         private readonly IBallService _service;
         private readonly List<BallItemViewModel> _ballItems;
         private readonly System.Timers.Timer _timer;
+        private readonly SynchronizationContext _uiContext;
 
         private bool _isRunning;
+
+        private readonly List<Brush> _colorPalette = new List<Brush>
+        {
+            Brushes.Red,
+            Brushes.Green,
+            Brushes.Blue,
+            Brushes.Orange,
+            Brushes.Purple,
+            Brushes.Cyan,
+            Brushes.Magenta,
+            Brushes.Yellow
+        };
+
+        private readonly Random _random = new Random();
+
+        private CancellationTokenSource _cts;
 
         public ObservableCollection<BallItemViewModel> Balls { get; }
 
@@ -63,6 +80,11 @@ namespace App.Presentation.ViewModel
                 if (_boardWidth == value) return;
                 _boardWidth = value;
                 OnPropertyChanged();
+                if (_boardWidth > 0 && _boardHeight > 0)
+                {
+                    LoadBalls();
+                    Start();
+                }
             }
         }
 
@@ -75,12 +97,19 @@ namespace App.Presentation.ViewModel
                 if (_boardHeight == value) return;
                 _boardHeight = value;
                 OnPropertyChanged();
+                if (_boardWidth > 0 && _boardHeight > 0)
+                {
+                    LoadBalls();
+                    Start();
+                }
             }
         }
 
         public BallViewModel(IBallService service)
         {
             _service = service;
+
+            _uiContext = SynchronizationContext.Current;
 
             _ballItems = new List<BallItemViewModel>();
             Balls = new ObservableCollection<BallItemViewModel>();
@@ -89,12 +118,10 @@ namespace App.Presentation.ViewModel
             PauseCommand = new RelayCommand(Pause);
             ResetCommand = new RelayCommand(Reset);
 
-            _timer = new System.Timers.Timer(16); // ~60 FPS
+            _timer = new System.Timers.Timer(1000); // ~1 sek
             _timer.Elapsed += OnTimerElapsed;
 
             LoadBalls();
-
-            Start();
         }
         
         private void OnTimerElapsed(object sender, System.Timers.ElapsedEventArgs e)
@@ -102,21 +129,15 @@ namespace App.Presentation.ViewModel
             if (!IsRunning)
                 return;
 
-            double dt = 0.016; // Assuming 60 FPS, so ~16ms per frame
-
-            _service.UpdatePositions(
-                _ballItems.Select(x => x.Model),
-                dt,
-                BoardWidth,
-                BoardHeight);
-
-            System.Windows.Application.Current.Dispatcher.BeginInvoke(() =>
+            _uiContext?.Post(_ =>
             {
                 foreach (var item in _ballItems)
                 {
+                    int randomIndex = _random.Next(_colorPalette.Count);
+                    item.BallColor = _colorPalette[randomIndex];
                     item.Refresh();
                 }
-            });
+            }, null);
         }
 
         public void Dispose()
@@ -146,14 +167,43 @@ namespace App.Presentation.ViewModel
 
         private void Start()
         {
-            _timer.Start();
+            if (IsRunning) return;
+
             IsRunning = true;
+            _timer.Start();
+
+            _cts = new CancellationTokenSource();
+
+            // Przechwytujemy bieżący kontekst wątku UI (wywołany na wątku głównym)
+            var uiContext = SynchronizationContext.Current;
+            var ballModels = _ballItems.Select(item => item.Model);
+
+            Task.Run(() => _service.StartSimulationAsync(
+                BoardWidth,
+                BoardHeight,
+                ballModels,
+                () => {
+                    // Bezpiecznie przesyłamy instrukcję do wątku UI
+                    uiContext?.Post(_ =>
+                    {
+                        foreach (var item in _ballItems)
+                        {
+                            item.Refresh();
+                        }
+                    }, null);
+                },
+                _cts.Token
+            ));
         }
 
         private void Pause()
         {
             _timer.Stop();
             IsRunning = false;
+
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = null;
         }
 
         public void Reset()
@@ -177,6 +227,18 @@ namespace App.Presentation.ViewModel
         public sealed class BallItemViewModel : INotifyPropertyChanged
         {
             public IBall Model { get; }
+
+            private Brush _ballColor = Brushes.Red;
+            public Brush BallColor
+            {
+                get { return _ballColor; }
+                set
+                {
+                    if (_ballColor == value) return;
+                    _ballColor = value;
+                    OnPropertyChanged();
+                }
+            }
 
             public BallItemViewModel(IBall model)
             {

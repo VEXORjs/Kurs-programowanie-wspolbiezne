@@ -142,5 +142,29 @@ namespace App.Logic
                 }
             }
         }
+
+        public async Task StartSimulationAsync(double width, double height, IEnumerable<IBall> balls, Action onTick, CancellationToken token)
+        {
+            double dt = 0.016; // 60 FPS
+            var ballList = balls.ToList();
+
+            while (!token.IsCancellationRequested)
+            {
+
+                UpdatePositions(ballList, dt, width, height);
+
+                onTick?.Invoke();
+
+                try
+                {
+                    await Task.Delay(16, token);
+
+                }
+                catch (TaskCanceledException)
+                {
+                    break;
+                 }
+            }
+        }
     }
 }

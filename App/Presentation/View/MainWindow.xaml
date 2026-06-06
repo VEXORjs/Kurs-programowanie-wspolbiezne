@@ -61,7 +61,7 @@
                         <DataTemplate>
                             <Ellipse Width="{Binding Diameter}"
                                      Height="{Binding Diameter}"
-                                     Fill="DodgerBlue"
+                                     Fill="{Binding BallColor}"
                                      Stroke="MidnightBlue"
                                      StrokeThickness="1"/>
                         </DataTemplate>

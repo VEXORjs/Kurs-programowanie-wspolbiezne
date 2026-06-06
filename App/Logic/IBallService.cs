@@ -15,5 +15,12 @@ namespace App.Logic
             double dt,
             double width,
             double height);
+
+        Task StartSimulationAsync(
+            double width,
+            double height,
+            IEnumerable<IBall> balls,
+            Action onTick,
+            CancellationToken token);
     }
 }
